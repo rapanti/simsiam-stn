@@ -203,6 +203,14 @@ def train(train_loader, model, criterion, optimizer, epoch, args,
         p1, p2, z1, z2 = model(x1=stn_images[0], x2=stn_images[1])
         siam = -(criterion(p1, z2).mean() + criterion(p2, z1).mean()) * 0.5
 
+        if not math.isfinite(penalty.item()):
+            print("Penalty is {}, stopping training".format(penalty.item()), force=True)
+            sys.exit(2)
+
+        if not math.isfinite(siam.item()):
+            print("SiamLoss is {}, stopping training".format(siam.item()), force=True)
+            sys.exit(2)
+
         loss = penalty + siam
 
         # compute gradient and do SGD step
