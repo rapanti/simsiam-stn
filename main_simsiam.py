@@ -101,7 +101,7 @@ def train_simsiam(args):
         optim_params = [{'params': model.module.encoder.parameters(), 'fix_lr': False},
                         {'params': model.module.predictor.parameters(), 'fix_lr': True}]
     else:
-        optim_params = model.parameters()
+        optim_params = list(model.parameters()) + list(stn.parameters())
 
     optimizer = torch.optim.SGD(optim_params, init_lr,
                                 momentum=args.momentum,
@@ -194,10 +194,13 @@ def train(train_loader, model, criterion, optimizer, epoch, args,
             # overlap = overlap_penalty(thetas)
 
         if color_augment:
-            images = color_augment(stn_images)
+            stn_images = color_augment(stn_images)
+
+        if utils.is_main_process() and it % args.summary_writer_freq == 0:
+            utils.summary_writer_write_images_thetas(summary_writer, stn_images, images, thetas, epoch, it)
 
         # compute output and loss
-        p1, p2, z1, z2 = model(x1=images[0], x2=images[1])
+        p1, p2, z1, z2 = model(x1=stn_images[0], x2=stn_images[1])
         siam = -(criterion(p1, z2).mean() + criterion(p2, z1).mean()) * 0.5
 
         loss = penalty + siam

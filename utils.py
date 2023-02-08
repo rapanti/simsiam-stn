@@ -223,8 +223,6 @@ def image_grid(images, original_images, epoch, plot_size=16):
 
     g1 = images[0]
     g2 = images[1]
-    l1 = images[2]
-    l2 = images[3]
 
     titles = [f"orig@{epoch} epoch", "global 1", "global 2", "local 1", "local 2"]
     total = 0
@@ -232,13 +230,11 @@ def image_grid(images, original_images, epoch, plot_size=16):
         orig_img = original_images[i]
         g1_img = g1[i]
         g2_img = g2[i]
-        l1_img = l1[i]
-        l2_img = l2[i]
-        all_images = [orig_img, g1_img, g2_img, l1_img, l2_img]
-        for j in range(5):
+        all_images = [orig_img, g1_img, g2_img]
+        for j in range(3):
             total += 1
 
-            plt.subplot(num_images, 5, total, title=titles[j])
+            plt.subplot(num_images, 3, total, title=titles[j])
             plt.xticks([])
             plt.yticks([])
             plt.grid(False)
@@ -278,6 +274,17 @@ class SummaryWriterCustom(SummaryWriter):
     def write_theta_heatmap(self, tag, theta, epoch, global_step):
         fig = theta_heatmap(theta, epoch)
         self.add_figure(tag, fig, global_step=global_step)
+
+
+def summary_writer_write_images_thetas(summary_writer, stn_images, images, thetas, epoch, it):
+    theta_g1 = thetas[0][0].cpu().detach().numpy()
+    theta_g2 = thetas[1][0].cpu().detach().numpy()
+    summary_writer.write_image_grid(tag="images", images=stn_images, original_images=images, epoch=epoch, global_step=it)
+    summary_writer.write_theta_heatmap(tag="theta_g1", theta=theta_g1, epoch=epoch, global_step=it)
+    summary_writer.write_theta_heatmap(tag="theta_g2", theta=theta_g2, epoch=epoch, global_step=it)
+
+    theta_g_euc_norm = np.linalg.norm(np.double(theta_g2 - theta_g1), 2)
+    summary_writer.add_scalar(tag="theta global eucl. norm.", scalar_value=theta_g_euc_norm, global_step=it)
 
 
 class SmoothedValue(object):
